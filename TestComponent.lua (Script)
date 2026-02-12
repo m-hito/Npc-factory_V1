@@ -1,0 +1,80 @@
+local replicatedStorage = game:GetService("ReplicatedStorage")
+local serverStorage = game:GetService("ServerStorage")
+local collectionService = game:GetService("CollectionService")
+local runService = game:GetService("RunService")
+local serverStorage = game:GetService("ServerStorage")
+
+local Spawner = require(replicatedStorage.Modules.Spawner)
+local fist = serverStorage.Tools:WaitForChild("Fist", math.huge)
+local tools = serverStorage.Tools
+
+local models = game.Workspace.World.Live
+
+local npcFactory = require(replicatedStorage.Modules.NPC_factory)
+
+local npcTemplate = serverStorage.NPC_template
+local meleeTemplate = npcTemplate.meleeNPC
+local rangedTemplate = npcTemplate.rangedNPC
+
+local fist = serverStorage.Tools.Katana
+
+local melee_pos = CFrame.new(100, 0, 0)
+local ranged_pos = melee_pos * CFrame.new(100, 10, 10)
+local portal = workspace.Spawner
+
+local storedWeapons = {}
+local npcStored = {}
+
+for _, tool in pairs(tools:GetChildren()) do
+	storedWeapons[tool.Name] = tool:Clone()
+end
+
+for _, npc in pairs(models:GetChildren()) do
+	local npcType = nil
+	local tags = npc:GetTags()
+	--print(tags)
+	if npc:FindFirstChild("Humanoid") then
+		local npcHumanoid = npc:FindFirstChild("Humanoid")
+		npcType = tags[1]
+		--print(npc.Name.." Npc name, Npc type: "..npcType)
+		if npcType == "melee" then
+			npcStored[npc.Name] = npcFactory.spawner(meleeTemplate, 1, npcType, fist, melee_pos)
+			currNpc = npcStored[npc.Name]
+			--print(currNpc)
+			
+			local movement = currNpc["MovementSystem"]
+			--print(movement)
+			runService.Heartbeat:Connect(function()
+				local currentTime = tick()
+				
+				if currentTime - movement.lastTimeCheck >= movement.checkInterval then
+					movement.lastTimeCheck = currentTime
+					movement:ChasingNPC()  -- Only every 0.5 sec, no blocking
+					--movement:PatrolPoint()
+				end
+				
+			end)
+			
+		elseif npcType == "ranged" then
+			npcStored[npc.Name] = npcFactory.spawner(rangedTemplate, 1, npcType, fist, ranged_pos)
+			currNpc = npcStored[npc.Name]
+			--print(currNpc)
+
+			local movement = currNpc["MovementSystem"]
+			--print(movement)
+			runService.Heartbeat:Connect(function()
+				local currentTime = tick()
+
+				if currentTime - movement.lastTimeCheck >= movement.checkInterval then
+					movement.lastTimeCheck = currentTime
+					movement:ChasingNPC()  -- Only every 0.5 sec, no blocking
+					--movement:PatrolPoint()
+				end
+
+			end)
+			
+		end
+
+	end
+	npcType = nil
+end
